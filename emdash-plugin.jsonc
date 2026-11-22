@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/@emdash-cms/plugin-cli/schemas/emdash-plugin.schema.json",
+  "slug": "dinkus-email",
+  "publisher": "did:plc:ekk4pjmkh3k3ql2kfoex3qt4",
+  "name": "DinkusKit Store emails",
+  "description": "Order, shipping and abandoned-cart emails for DinkusKit Commerce stores on EmDash, sent from your store's own address.",
+  "keywords": ["email", "order confirmation", "shipping confirmation", "abandoned cart", "ecommerce"],
+  "license": "MIT",
+  "author": {
+    "name": "DinkusKit",
+    "url": "https://dinkuskit.com"
+  },
+  "security": {
+    "url": "https://github.com/dinkuskit/email/security"
+  },
+  "repo": "https://github.com/dinkuskit/email",
+  // email:send hands each email to the store's own sender. users:read finds the store's Administrator,
+  // who gets the emails of TEST orders. media:read lists the store's images for the logo, and
+  // media:bytes:read lets the public `logo` route serve the one picked (store-email-styling-20261122).
+  "capabilities": ["email:send", "users:read", "media:read", "media:bytes:read"],
+  "storage": {
+    "emails": {
+      "indexes": ["state", "updatedAt", ["state", "nextTry"]],
+      "uniqueIndexes": []
+    }
+  },
+  "admin": {
+    "pages": [
+      { "path": "/store-emails", "label": "Store emails", "icon": "envelope" }
+    ]
+  }
+}
