@@ -18,7 +18,7 @@ export interface OrderNews {
 /** An order was marked Completed: the shipping confirmation. */
 export interface ShippedNews {
   orderId: string; number: number | null; test: boolean; email: string | null; name: string | null;
-  carrier: string | null; tracking: string | null; lines: Line[];
+  carrier: string | null; tracking: string | null; lines: Line[]; moreLines: number;
 }
 /** A cart was left: the abandoned-cart email, when the owner's choice allows it. */
 export interface CartNews { email: string; ticked: boolean; link: string; stopLink: string; lines: Line[] | null; moreLines: number }
@@ -26,7 +26,7 @@ export interface CartNews { email: string; ticked: boolean; link: string; stopLi
 export type Kind = "order" | "shipped" | "cart";
 export const SENDER = "dinkus-commerce";
 export const TOPICS: Record<string, Kind> = { "order.paid": "order", "order.shipped": "shipped", "cart.left": "cart" };
-/** Commerce sends at most 50 lines and says how many it left out; a shipped order lists up to 100 products. */
+/** Commerce keeps each item under the courier's 8 KB by dropping lines and says how many it left out (moreLines). */
 const LINES_MAX = 100;
 
 const record = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -55,7 +55,7 @@ function address(value: unknown): Address | null | undefined {
 
 /** Lines that need a name and a quantity; a price where the topic has one. Null when any line is out of shape. */
 function lines(value: unknown, priced: boolean): Line[] | null {
-  if (!Array.isArray(value) || value.length === 0 || value.length > LINES_MAX) return null;
+  if (!Array.isArray(value) || value.length > LINES_MAX) return null;
   const out: Line[] = [];
   for (const line of value) {
     if (!record(line)) return null;
@@ -82,7 +82,7 @@ export function orderNews(data: unknown): OrderNews | null {
   const parts = orderParts(data), shipTo = address(data.shipTo), items = lines(data.lines, true), total = money(data.total);
   const subtotal = moneyOrNull(data.subtotal), discount = moneyOrNull(data.discount), shipping = moneyOrNull(data.shipping);
   const moreLines = data.moreLines === undefined ? 0 : count(data.moreLines, 0, 100_000);
-  if (!parts || shipTo === undefined || !items || !total || subtotal === undefined || discount === undefined || shipping === undefined || moreLines === null) return null;
+  if (!parts || shipTo === undefined || !items || !total || items.length + (moreLines ?? 0) === 0 || subtotal === undefined || discount === undefined || shipping === undefined || moreLines === null) return null;
   return { ...parts, shipTo, lines: items, moreLines, subtotal, discount, shipping, total };
 }
 
@@ -90,8 +90,9 @@ export function shippedNews(data: unknown): ShippedNews | null {
   if (!record(data)) return null;
   const parts = orderParts(data), items = lines(data.lines, false);
   const carrier = maybe(data.carrier, 100), tracking = maybe(data.tracking, 100);
-  if (!parts || !items || (data.carrier && !carrier) || (data.tracking && !tracking)) return null;
-  return { ...parts, carrier, tracking, lines: items };
+  const moreLines = data.moreLines === undefined ? 0 : count(data.moreLines, 0, 100_000);
+  if (!parts || !items || (data.carrier && !carrier) || (data.tracking && !tracking) || moreLines === null || items.length + moreLines === 0) return null;
+  return { ...parts, carrier, tracking, lines: items, moreLines };
 }
 
 /**

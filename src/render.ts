@@ -130,12 +130,12 @@ export function shippingConfirmation(look: Look, order: ShippedNews, test = fals
     heading("Your order is on its way") + paragraph(lead) +
     (facts.length ? `<p style="margin:0 0 20px">${facts.map(escape).join("<br>")}</p>` : "") +
     button(look, link ? "Track your package" : "View your order", link ?? look.trackOrder) +
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 8px">${itemsHtml(order.lines, 0, false)}</table>`);
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 8px">${itemsHtml(order.lines, order.moreLines, false)}</table>`);
   const text = [
     ...(test ? ["This is a TEST order, so this email went to you instead of the shopper.", ""] : []),
     "Your order is on its way", "", lead, ...(facts.length ? ["", ...facts] : []), "",
     link ? `Track your package: ${link}` : `View your order: ${look.trackOrder}`, "",
-    ...itemsText(order.lines, 0, false), "", look.footer, look.store,
+    ...itemsText(order.lines, order.moreLines, false), "", look.footer, look.store,
   ].join("\n");
   return { subject, text, html };
 }

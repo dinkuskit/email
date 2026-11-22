@@ -105,11 +105,12 @@ test("a shipping confirmation carries the carrier, the tracking number and the c
   assert.match(email.text, /^Smoky Mountain Tee$/m, "a shipped line without a quantity shows none");
 });
 
-test("a shipped line that carries its quantity shows it", async () => {
+test("a shipped line that carries its quantity shows it, and dropped lines are counted", async () => {
   const ctx = store();
-  await deliver(ctx, "order.shipped", [shipped({ lines: [{ productId: "tee", productName: "Smoky Mountain Tee", quantity: 2 }] })]);
+  await deliver(ctx, "order.shipped", [shipped({ lines: [{ productId: "tee", productName: "Smoky Mountain Tee", quantity: 2 }], moreLines: 1 })]);
   await run(ctx);
   assert.match(ctx.sent[0].text, /^2 × Smoky Mountain Tee$/m);
+  assert.match(ctx.sent[0].text, /^and 1 more item$/m, "lines Commerce dropped to stay under 8 KB are counted");
 });
 
 test("a shipping confirmation without a known carrier links to the order lookup page", async () => {
