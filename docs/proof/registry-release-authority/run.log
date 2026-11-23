@@ -1,0 +1,77 @@
+# EmDash release service at release-action pin 45b542c016d35c7a88a590dce8e600e2384c13a9
+# cd apps/release-service && npx vitest run test/workload-policy-evaluation.test.ts test/release-intent-workflow.test.ts test/workflow-connection-routes.test.ts test/github-oidc.test.ts --reporter=verbose
+# Run 2026-11-23 16:29 UTC, Node v22.23.5, after building the service's workspace dependencies.
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > verifies and normalizes a workload identity without retaining the token
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > normalizes optional environment and reusable-workflow claims
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > accepts GitHub App bot actor names
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects repository owner mismatch
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects workflow repository mismatch
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects invalid workflow SHA
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects zero run attempt
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects invalid ref
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects invalid ref type
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects invalid visibility
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects invalid runner
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects invalid reusable workflow ref
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects a reusable workflow ref without its matching SHA
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects missing required normalized claims
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects a wrong issuer
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects a wrong audience
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects a expired token
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects a future token
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects a stale token
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects invalid verifier configuration separately from the token
+✓ test/github-oidc.test.ts > GitHub Actions OIDC verification > rejects a modified signature
+✓ test/workload-policy-evaluation.test.ts > workload policy evaluation > accepts the exact immutable repository, workflow, ref, and environment
+✓ test/workload-policy-evaluation.test.ts > workload policy evaluation > matches the repository portion of a workflow reference case-insensitively
+✓ test/workload-policy-evaluation.test.ts > workload policy evaluation > rejects WORKLOAD_POLICY_INACTIVE
+✓ test/workload-policy-evaluation.test.ts > workload policy evaluation > rejects WORKLOAD_REPOSITORY_MISMATCH
+✓ test/workload-policy-evaluation.test.ts > workload policy evaluation > rejects WORKLOAD_REPOSITORY_MISMATCH
+✓ test/workload-policy-evaluation.test.ts > workload policy evaluation > rejects WORKLOAD_REPOSITORY_MISMATCH
+✓ test/workload-policy-evaluation.test.ts > workload policy evaluation > rejects WORKLOAD_WORKFLOW_MISMATCH
+✓ test/workload-policy-evaluation.test.ts > workload policy evaluation > rejects WORKLOAD_REF_MISMATCH
+✓ test/workload-policy-evaluation.test.ts > workload policy evaluation > rejects WORKLOAD_ENVIRONMENT_MISMATCH
+✓ test/workload-policy-evaluation.test.ts > workload policy evaluation > treats empty ref and environment restrictions as wildcards
+✓ test/workload-policy-evaluation.test.ts > workload policy evaluation > allows future version tags through bounded trailing-wildcard rules
+✓ test/workload-policy-evaluation.test.ts > workload policy evaluation > produces stable, domain-separated workload digests
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > terminates an intent when its authoritative repository cannot be verified
+✓ test/workflow-connection-routes.test.ts > GitHub workflow connection routes > accepts a secretless first request after verifying the signed package profile
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > fails the intent when a verification step conflicts
+✓ test/workflow-connection-routes.test.ts > GitHub workflow connection routes > reuses the confirmed repository workflow for a later package tag
+✓ test/workflow-connection-routes.test.ts > GitHub workflow connection routes > rejects a repository mismatch before it consumes onboarding capacity
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > fails the intent when the verifier input is invalid
+✓ test/workflow-connection-routes.test.ts > GitHub workflow connection routes > rejects a missing package profile before creating a workflow request
+✓ test/workflow-connection-routes.test.ts > GitHub workflow connection routes > does not initialize a publisher shard before the account authorizes publishing
+✓ test/workflow-connection-routes.test.ts > GitHub workflow connection routes > prevents unrelated GitHub principals from consuming the publisher onboarding queue
+✓ test/workflow-connection-routes.test.ts > GitHub workflow connection routes > consumes invitations once and rejects expired invitations
+✓ test/workflow-connection-routes.test.ts > GitHub workflow connection routes > lets the publisher reject a pending workflow connection
+✓ test/workflow-connection-routes.test.ts > GitHub workflow connection routes > lets the first permanent workflow request publisher confirmation without a secret
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > persists every verification stage and publishes a valid non-escalating intent
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > requires reauthorization instead of writing after a PDS migration
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > rechecks the PDS audience after uploads before creating the release
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > does not publish a nominal create receipt when the authoritative record is absent
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > retains private uploads through publication retries and reconciliation (retry=false)
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > retains private uploads through publication retries and reconciliation (retry=true)
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > uploads every artifact before permitting a blob-only canonical create
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > retries an ambiguous blob upload without entering release reconciliation
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > converges a timeout after createRecord to the exact authoritative release
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > makes a different record at the deterministic key a terminal conflict
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > makes a release that appears before final verification a terminal conflict
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > invalidates an intent when the final publisher snapshot is malformed
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > does not reintroduce access after a capability-removing release changes the baseline
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > uses a fresh permit and publication generation after each confirmed absence
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > uses a fresh permit and publication generation after each confirmed absence
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > rechecks the attested workload against the active policy before create
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > blocks publication after a permit when publication pause wins the pre-write race
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > blocks publication after a permit when publisher suspension wins the pre-write race
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > blocks publication after a permit when delegation revocation wins the pre-write race
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > restarts a completed ready Workflow after publication is unpaused
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > resumes publication when the publishing transition committed without an operation
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > expires a ready intent instead of publishing it after a pause
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > restarts an errored reconciliation and accepts the exact authoritative record
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > waits for a canonical approval transition and resumes from its event
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > starts one deterministic Workflow instance and reuses it on replay
+✓ test/release-intent-workflow.test.ts > ReleaseIntentWorkflow > persists a verifier rejection and terminates the intent as invalid
+Test Files  4 passed (4)
+Tests  71 passed (71)
+Duration  44.25s (transform 5.72s, setup 0ms, import 13.31s, tests 37.55s, environment 0ms)
