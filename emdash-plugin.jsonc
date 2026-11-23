@@ -5,6 +5,20 @@
   "name": "DinkusKit Store emails",
   "description": "Order, shipping and abandoned-cart emails for DinkusKit Commerce stores on EmDash, sent from your store's own address.",
   "keywords": ["email", "order confirmation", "shipping confirmation", "abandoned cart", "ecommerce"],
+  "sections": {
+    "description": { "file": "./docs/registry-listing/description.md" },
+    "installation": { "file": "./docs/registry-listing/installation.md" },
+    "faq": { "file": "./docs/registry-listing/faq.md" }
+  },
+  "release": {
+    "artifacts": {
+      "icon": { "file": "./assets/listing/icon.png" },
+      "screenshots": [
+        { "file": "./assets/listing/store-emails-page.png", "lang": "en" },
+        { "file": "./assets/listing/order-confirmation.png", "lang": "en" }
+      ]
+    }
+  },
   "license": "MIT",
   "author": {
     "name": "DinkusKit",

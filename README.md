@@ -4,7 +4,7 @@ The emails a shopper gets about an order or a cart, for [DinkusKit Commerce](htt
 
 ## Status
 
-First build. Nothing is published to the Registry. Two pieces outside this repository come with it: Commerce's courier news (`order.paid`, `cart.left`, and carrier and tracking on `order.shipped`) and the store template's Cloudflare sender with its cart-email guard. Until both are released, no store sends these emails.
+Version 0.1.0 is set up to publish to the EmDash Registry as `dinkus-email`; the owner approved publishing on 2026-11-23. It needs two pieces from outside this repository: Commerce's courier news (`order.paid`, `cart.left`, and carrier and tracking on `order.shipped`, with its send-time cart stop check), which first ships in a Commerce 0.9.0 release, and the store template's courier timer and Cloudflare sender with its cart-email guard. Until a store has both, it sends none of these emails.
 
 What exists:
 
@@ -32,7 +32,7 @@ The news shapes are Commerce's (`order.paid` data: `orderId, number, test, email
 
 ## Install type
 
-Registry only, sandboxed. Not listed in the Registry yet.
+Registry only, sandboxed. The listing copy is in `docs/registry-listing/` and its artwork in `assets/listing/`.
 
 ## Develop
 
@@ -45,3 +45,7 @@ npm test
 ```
 
 `npm test` builds the plugin, packages it the way the Registry does (failing if the backend passes 128 KiB or asks for anything not listed above), and runs the tests against the built bundle.
+
+## Release
+
+`.github/workflows/release.yml` publishes to the EmDash Registry when a `vX.Y.Z` tag matching `package.json`'s version is pushed (Run workflow on the tag retries). It runs the checks, prepares the bundle with the pinned `emdash-plugin release prepare`, signs its build provenance, publishes with the pinned EmDash release-action (listing images included), waits up to 30 minutes for the owner's approval at releases.emdashcms.com, and passes only when the Registry record carries exactly the prepared bundle. The service accepts releases only from a public repository.
