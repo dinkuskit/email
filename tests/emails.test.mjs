@@ -265,15 +265,70 @@ test("with no email sender nothing is sent and nothing is lost", async () => {
   assert.equal(await ctx.kv.get("state:no-sender"), false);
 });
 
-test("an email that waited 3 days without a sender is given up on", async () => {
+test("an email that waited 3 days is given up on, and its content dropped, with or without a sender", async () => {
+  for (const sender of [true, false]) {
+    for (const site of [true, false]) {
+      const ctx = store();
+      const item = paid();
+      await deliver(ctx, "order.paid", [item]);
+      const kept = await row(ctx, item.id);
+      await ctx.storage.emails.put(item.id, { ...kept, receivedAt: new Date(Date.now() - 4 * 24 * 60 * MINUTE).toISOString() });
+      if (!sender) ctx.email = undefined;
+      if (!site) ctx.url = path => path;
+      await run(ctx);
+      const label = `sender ${sender}, site address ${site}`;
+      assert.equal(ctx.sent.length, 0, label);
+      const after = await row(ctx, item.id);
+      assert.equal(after.reason, "Not sent: it could not go out for 3 days", label);
+      assert.equal(after.news, undefined, label);
+    }
+  }
+});
+
+test("without a sender, an email the owner's choices no longer want is settled and its content dropped", async () => {
+  const ctx = store();
+  ctx.email = undefined;
+  const item = left();
+  await deliver(ctx, "cart.left", [item]);
+  await run(ctx);
+  const after = await row(ctx, item.id);
+  assert.equal(after.reason, "Not sent: cart emails are off");
+  assert.equal(after.news, undefined);
+});
+
+test("an email is marked sent with its content already dropped before the sender gets it", async () => {
+  const ctx = store();
+  const item = left();
+  await ctx.kv.set("state:cart-mode", "ticked");
+  await deliver(ctx, "cart.left", [item]);
+  let during;
+  const send = ctx.email.send;
+  ctx.email.send = async message => { during = await row(ctx, item.id); return send(message); };
+  await run(ctx);
+  // A run stopped here, mid-send, leaves only the log line: no address, no cart link, and it is never sent again.
+  assert.equal(during.state, "sent");
+  assert.equal(during.news, undefined);
+  assert.doesNotMatch(JSON.stringify(during), /example\.test\/cart|taylor/);
+  assert.match(ctx.sent[0].text, /cart\/c\/cap/, "the email itself still carries the link");
+  await run(ctx);
+  assert.equal(ctx.sent.length, 1);
+});
+
+test("a refused hand-over gets its content back for the next try, and the retry sends the same email", async () => {
   const ctx = store();
   const item = paid();
   await deliver(ctx, "order.paid", [item]);
-  const kept = await row(ctx, item.id);
-  await ctx.storage.emails.put(item.id, { ...kept, receivedAt: new Date(Date.now() - 4 * 24 * 60 * MINUTE).toISOString() });
+  ctx.fail.push("timeout");
   await run(ctx);
-  assert.equal(ctx.sent.length, 0);
-  assert.equal((await row(ctx, item.id)).reason, "Not sent: it could not go out for 3 days");
+  const waiting = await row(ctx, item.id);
+  assert.equal(waiting.state, "waiting");
+  assert.equal(waiting.news.email, item.data.email);
+  await due(ctx, item.id);
+  await run(ctx);
+  assert.equal(ctx.sent.length, 1);
+  assert.equal(ctx.sent[0].to, item.data.email);
+  assert.match(ctx.sent[0].text, /Smoky Mountain Tee/);
+  assert.equal((await row(ctx, item.id)).news, undefined);
 });
 
 test("one run hands over at most 10 emails, oldest first; the next run sends the rest", async () => {

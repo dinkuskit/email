@@ -34,7 +34,7 @@ export interface EmailRecord {
 
 interface Collection {
   getVersioned(id: string): Promise<{ value: unknown; revision: string } | null>;
-  compareAndSet(id: string, expectedRevision: string | null, data: unknown): Promise<{ applied: boolean }>;
+  compareAndSet(id: string, expectedRevision: string | null, data: unknown): Promise<{ applied: true; revision: string } | { applied: false }>;
   query(options?: { where?: Record<string, unknown>; orderBy?: Record<string, "asc" | "desc">; limit?: number; cursor?: string }):
     Promise<{ items: { id: string; data: unknown }[]; cursor?: string; hasMore?: boolean }>;
   delete(id: string): Promise<boolean>;
@@ -128,29 +128,35 @@ export interface RunResult { sent: number; failed: number; skipped: number; reas
 /**
  * One run, every minute on the site's scheduler: hands each email that is due to the store's sender,
  * oldest first. An email is marked sent before it is handed over, by a write that lands only while it
- * still waits, so two runs at once never send it twice. A failed hand-over waits and is tried again;
- * the fifth failure gives it up. A cart email the template's Cloudflare guard refuses is not tried again.
+ * still waits, so two runs at once never send it twice. That write already drops the email's content
+ * (address, ship-to, cart links): the content goes to the sender from memory, and is written back only
+ * when the sender refuses it and it waits for another try. So an email the sender took is never sent
+ * again, and a run stopped mid-send leaves only the log line. A failed hand-over waits and is tried
+ * again; the fifth failure gives it up. A cart email the template's Cloudflare guard refuses is not
+ * tried again. Without a sender or the site's address nothing is sent, but emails still give up after
+ * 3 days, or when the owner's choices no longer want them, and their content is dropped.
  */
 export async function sendDue(ctx: PluginContext, now = Date.now()): Promise<RunResult> {
   const result: RunResult = { sent: 0, failed: 0, skipped: 0 };
   await prune(ctx, now);
   const sender = ctx.email;
   await ctx.kv.set(NO_SENDER, !sender);
-  if (!sender) return { ...result, reason: "no-sender" };
   // Links in an email must be whole web addresses; a site that does not know its own would send dead ones.
   const addressed = /^https?:\/\/[^/]/.test(ctx.url("/"));
   await ctx.kv.set(NO_ADDRESS, !addressed);
-  if (!addressed) return { ...result, reason: "no-address" };
+  const blocked: RunResult["reason"] = !sender ? "no-sender" : !addressed ? "no-address" : undefined;
+  if (blocked) result.reason = blocked;
   const iso = new Date(now).toISOString();
   const page = await emails(ctx).query({ where: { state: "waiting", nextTry: { lte: iso } }, orderBy: { nextTry: "asc" }, limit: RUN_MAX });
   if (page.items.length === 0) return result;
-  const looks = await look(ctx);
+  const looks = blocked ? null : await look(ctx);
   let owner: string | null | undefined;
   for (const { id } of page.items) {
     const stored = await emails(ctx).getVersioned(id);
     const record = stored?.value as EmailRecord | undefined;
     if (!stored || !record || record.state !== "waiting" || !record.news || !(record.nextTry! <= iso)) continue;
     let reason = await stopped(ctx, record, now);
+    if (!reason && (blocked || !sender || !looks)) continue; // waits for a sender
     let to = record.test ? null : (record.news as { email: string | null }).email;
     if (!reason && record.test) {
       owner ??= await ownerAddress(ctx);
@@ -162,33 +168,32 @@ export async function sendDue(ctx: PluginContext, now = Date.now()): Promise<Run
       continue;
     }
     const tries = record.tries + 1;
-    const claimed: EmailRecord = { ...record, state: "sent", sentAt: iso, updatedAt: iso, tries };
+    const claimed = settle(record, { state: "sent", sentAt: iso, updatedAt: iso, tries });
     delete claimed.reason;
-    if (!(await emails(ctx).compareAndSet(id, stored.revision, claimed)).applied) continue;
-    const latest = () => emails(ctx).getVersioned(id);
+    const claim = await emails(ctx).compareAndSet(id, stored.revision, claimed);
+    if (!claim.applied) continue;
+    let refusal: unknown = null;
     try {
-      await sender.send({ to: to!, ...message(record, looks) });
-      result.sent++;
-      // Sent: only the log line stays. If this write loses a race, the next prune still drops the content at 90 days.
-      const again = await latest();
-      if (again) await emails(ctx).compareAndSet(id, again.revision, settle(claimed, {}));
+      await sender!.send({ to: to!, ...message(record, looks!) });
     } catch (error) {
-      result.failed++;
-      const words = error instanceof Error ? error.message : String(error);
-      const again = await latest();
-      if (!again) continue;
-      // The reason may hold the shopper's address, so only its kind is kept and logged.
-      if (BLOCKED.test(words)) {
-        await emails(ctx).compareAndSet(id, again.revision, settle(claimed, { state: "blocked", reason: "Not sent: cart emails need an SMTP sender" }));
-      } else if (tries > RETRY_MINUTES.length) {
-        ctx.log.warn("An email could not be handed to the store's email sender and was given up on", { kind: record.kind, tries });
-        await emails(ctx).compareAndSet(id, again.revision, settle(claimed, { state: "failed", reason: "Failed 5 times; not sent" }));
-      } else {
-        ctx.log.warn("An email could not be handed to the store's email sender; it will be tried again", { kind: record.kind, tries });
-        const { sentAt: _sentAt, ...rest } = claimed;
-        await emails(ctx).compareAndSet(id, again.revision, { ...rest, state: "waiting", nextTry: new Date(now + RETRY_MINUTES[tries - 1]! * MINUTE).toISOString(), reason: "Failed, trying again" });
-      }
+      refusal = error ?? new Error("refused");
     }
+    if (!refusal) { result.sent++; continue; }
+    result.failed++;
+    const words = refusal instanceof Error ? refusal.message : String(refusal);
+    // The refusal may hold the shopper's address, so only the email's kind is kept and logged.
+    const { sentAt: _sentAt, ...unsent } = claimed;
+    let change: EmailRecord;
+    if (BLOCKED.test(words)) change = { ...unsent, state: "blocked", reason: "Not sent: cart emails need an SMTP sender" };
+    else if (tries > RETRY_MINUTES.length) {
+      ctx.log.warn("An email could not be handed to the store's email sender and was given up on", { kind: record.kind, tries });
+      change = { ...unsent, state: "failed", reason: "Failed 5 times; not sent" };
+    } else {
+      ctx.log.warn("An email could not be handed to the store's email sender; it will be tried again", { kind: record.kind, tries });
+      change = { ...unsent, news: record.news, state: "waiting", nextTry: new Date(now + RETRY_MINUTES[tries - 1]! * MINUTE).toISOString(), reason: "Failed, trying again" };
+    }
+    // Only this run's own claim is turned back; a write that loses a race leaves the content dropped.
+    await emails(ctx).compareAndSet(id, claim.revision, change);
   }
   return result;
 }

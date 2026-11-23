@@ -29,7 +29,7 @@ function collection() {
     async compareAndSet(id, expected, data) {
       if ((rows.get(id)?.revision ?? null) !== expected) return { applied: false };
       rows.set(id, { data: structuredClone(data), revision: String(++clock) });
-      return { applied: true };
+      return { applied: true, revision: String(clock) };
     },
   };
 }
