@@ -1,6 +1,6 @@
 {
   "name": "@dinkuskit/email",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Order, shipping and abandoned-cart emails for DinkusKit stores on EmDash, sent from the store's own address",
   "type": "module",
   "private": true,
