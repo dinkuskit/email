@@ -1,0 +1,26 @@
+[plugin:cloudflare-email] email delivered via Cloudflare Email Sending {
+  to: 'jamie1@example.test',
+  subject: 'Order #1041 confirmed',
+  messageId: 'm-1'
+}
+[email:deliver] Provider "cloudflare-email" failed to send email to "taylor2@example.test": Error: MARKETING_BLOCKED: Cart emails are marketing, so they need an SMTP sender. Cloudflare's sender doesn't allow marketing email; pick SMTP in Settings > Email.
+    at file://~/template-store/.artifacts/email-proof/cf/cloudflare-email.ts:32:43
+    at file://node_modules/emdash/dist/hook-result-CO4E3zDv.mjs:3712:49
+    at HookPipeline.executeWithTimeout (file://node_modules/emdash/dist/hook-result-CO4E3zDv.mjs:2968:31)
+    at HookPipeline.invokeExclusiveHook (file://node_modules/emdash/dist/hook-result-CO4E3zDv.mjs:3712:24)
+    at EmailPipeline.sendInner (file://node_modules/emdash/dist/emdash-runtime-CXsdCQnM.mjs:211:45)
+    at async EmailPipeline.send (file://node_modules/emdash/dist/emdash-runtime-CXsdCQnM.mjs:183:10)
+    at async Ce (file://~/email/dist/plugin.mjs:4:4372)
+    at async Object.handler (file://~/email/dist/plugin.mjs:4:17944)
+    at async TestContext.<anonymous> (file://~/template-store/.artifacts/email-proof/cf/store-emails-cloudflare.test.mjs:49:5)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+store emails cloudflare proof {"picked":"cloudflare-email","delivered":[{"from":"orders@store.example.test","subject":"Order #1041 confirmed"}],"rows":[{"label":"Order #1041 confirmed","masked":"j••••@example.test","state":"sent","tries":1,"reason":null,"keepsContent":false},{"label":"Cart reminder","masked":"t••••@example.test","state":"blocked","tries":1,"reason":"Not sent: cart emails need an SMTP sender","keepsContent":false}]}
+✔ Store emails through the template's Cloudflare sender: order email delivered, cart email refused and recorded (325.955407ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2888.917693

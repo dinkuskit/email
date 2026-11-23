@@ -1,0 +1,44 @@
+{
+  "name": "@dinkuskit/email",
+  "version": "0.0.0",
+  "description": "Order, shipping and abandoned-cart emails for DinkusKit stores on EmDash, sent from the store's own address",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "files": [
+    "dist",
+    "emdash-plugin.jsonc",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "emdash-plugin validate && emdash-plugin build && node scripts/check-registry-bundle.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "@emdash-cms/blocks": "1.5.0",
+    "@emdash-cms/plugin-cli": "0.13.6",
+    "@emdash-cms/plugin-types": "0.6.1",
+    "emdash": "1.5.0",
+    "typescript": "6.0.3"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dinkuskit/email.git"
+  },
+  "main": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./sandbox": "./dist/plugin.mjs"
+  },
+  "peerDependencies": {
+    "emdash": "1.5.0"
+  }
+}

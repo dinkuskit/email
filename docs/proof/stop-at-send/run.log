@@ -1,0 +1,25 @@
+# Commerce cb2bc76 (dinkuskit/commerce#298), Store emails working tree on 077b3f1, EmDash 1.5.0, Node v24.22.0
+EmDash: Loaded sandboxed plugin dinkus-commerce:0.8.0 with capabilities: [content:read, admin.editor-draft:read, hooks.content-policy:register, media:read, network:request, hooks.email-events:register]
+EmDash: Loaded sandboxed plugin dinkus-email:0.0.0 with capabilities: [media:read, media:bytes:read, email:send, users:read]
+[email:deliver] Provider "test-sender" failed to send email to "ana@buyer.test": Error: sender timed out
+    at handler (file://.tmp/proof/stop-at-send.test.mjs:30:138)
+    at file://node_modules/emdash/dist/hook-result-CO4E3zDv.mjs:3712:49
+    at HookPipeline.executeWithTimeout (file://node_modules/emdash/dist/hook-result-CO4E3zDv.mjs:2968:31)
+    at HookPipeline.invokeExclusiveHook (file://node_modules/emdash/dist/hook-result-CO4E3zDv.mjs:3712:24)
+    at EmailPipeline.sendInner (file://node_modules/emdash/dist/emdash-runtime-CXsdCQnM.mjs:211:45)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async EmailPipeline.send (file://node_modules/emdash/dist/emdash-runtime-CXsdCQnM.mjs:183:10)
+    at async dispatch (file://node_modules/@emdash-cms/sandbox-workerd/dist/runner-CCKRBlsM.mjs:386:4)
+    at async Object.handler (file://node_modules/@emdash-cms/sandbox-workerd/dist/runner-CCKRBlsM.mjs:133:19)
+    at async Server.handler (file://node_modules/@emdash-cms/sandbox-workerd/dist/runner-CCKRBlsM.mjs:1297:24)
+[plugin:dinkus-email] An email could not be handed to the store's email sender; it will be tried again { kind: 'cart', tries: 1 }
+stop at send proof {"afterFirstRun":{"state":"waiting","reason":"Failed, trying again"},"afterStop":{"state":"skipped","reason":"Not sent: the shopper stopped cart emails","tries":2,"keepsContent":false,"masked":"a••••@buyer.test"},"senderCalls":1,"delivered":0}
+✔ a cart email waiting for a retry when its shopper stops cart emails is never sent (429.73528ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3123.88966
