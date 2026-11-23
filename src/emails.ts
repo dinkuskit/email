@@ -55,6 +55,11 @@ export const KEEP_MS = 90 * DAY;
 const PRUNE_MAX = 20;
 /** The template's Cloudflare guard refuses a cart email with this code (store-email-sender-20261122). */
 const BLOCKED = /MARKETING_BLOCKED/;
+/**
+ * Commerce refuses a cart email at send time with this code once its shopper has stopped cart emails, even one that
+ * waited or was being retried (cart-email-stop-at-send-20261123). EmDash puts the plugin and hook in front of it.
+ */
+const STOPPED = /CART_EMAIL_STOPPED/;
 
 /** "j••••@gmail.com": enough for the owner to tell emails apart, and never a whole address on the page. */
 export function mask(address: string): string {
@@ -179,11 +184,16 @@ export async function sendDue(ctx: PluginContext, now = Date.now()): Promise<Run
       refusal = error ?? new Error("refused");
     }
     if (!refusal) { result.sent++; continue; }
-    result.failed++;
     const words = refusal instanceof Error ? refusal.message : String(refusal);
     // The refusal may hold the shopper's address, so only the email's kind is kept and logged.
     const { sentAt: _sentAt, ...unsent } = claimed;
     let change: EmailRecord;
+    if (record.kind === "cart" && STOPPED.test(words)) {
+      result.skipped++;
+      await emails(ctx).compareAndSet(id, claim.revision, { ...unsent, state: "skipped", reason: "Not sent: the shopper stopped cart emails" });
+      continue;
+    }
+    result.failed++;
     if (BLOCKED.test(words)) change = { ...unsent, state: "blocked", reason: "Not sent: cart emails need an SMTP sender" };
     else if (tries > RETRY_MINUTES.length) {
       ctx.log.warn("An email could not be handed to the store's email sender and was given up on", { kind: record.kind, tries });

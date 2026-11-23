@@ -379,3 +379,25 @@ test("the items Commerce's outbox gives on main are taken and emailed as they ar
   assert.match(ctx.sent[1].text, /^1 × Mug$/m);
   assert.match(ctx.sent[1].text, /View your order: https:\/\/store\.example\.test\/track-order/, "no carrier given: no tracking link");
 });
+
+test("a cart email Commerce refuses because the shopper stopped cart emails is not sent and never tried again", async () => {
+  // Stopped after the news arrived, then once more while its retry waited: Commerce's send-time check refuses both times.
+  const ctx = store();
+  await ctx.kv.set("state:cart-mode", "all");
+  const first = left(), second = left({ email: "bo@buyer.test" });
+  await deliver(ctx, "cart.left", [first, second]);
+  ctx.fail.push("Plugin dinkus-commerce:0.9.0 hook email:beforeSend failed: CART_EMAIL_STOPPED: This shopper stopped cart emails.", "timeout");
+  await run(ctx);
+  const stopped = await row(ctx, first.id);
+  assert.deepEqual([stopped.state, stopped.reason, stopped.tries, "news" in stopped], ["skipped", "Not sent: the shopper stopped cart emails", 1, false]);
+  assert.equal((await row(ctx, second.id)).state, "waiting");
+  await due(ctx, second.id);
+  ctx.fail.push("Plugin dinkus-commerce:0.9.0 hook email:beforeSend failed: CART_EMAIL_STOPPED: This shopper stopped cart emails.");
+  await run(ctx);
+  const retried = await row(ctx, second.id);
+  assert.deepEqual([retried.state, retried.reason, retried.tries, "news" in retried], ["skipped", "Not sent: the shopper stopped cart emails", 2, false]);
+  await due(ctx, first.id).catch(() => {});
+  await run(ctx);
+  assert.equal(ctx.sent.length, 0, "neither was ever sent");
+  assert.equal((await row(ctx, first.id)).state, "skipped");
+});
