@@ -42,7 +42,8 @@ const TRACKERS: [RegExp, string][] = [
 export function trackingLink(carrier: string | null, tracking: string | null): string | null {
   if (!carrier || !tracking) return null;
   const found = TRACKERS.find(([name]) => name.test(carrier));
-  return found ? found[1] + encodeURIComponent(tracking) : null;
+  // Labels print the number in groups ("9400 1000 ..."); the carriers' pages want it without the spaces.
+  return found ? found[1] + encodeURIComponent(tracking.replace(/\s+/g, "")) : null;
 }
 
 const addressLines = (to: Address) => [to.name, to.line1, to.line2, [to.city, [to.region, to.postalCode].filter(Boolean).join(" ")].join(", "), to.country === "US" ? "" : to.country].filter(Boolean) as string[];

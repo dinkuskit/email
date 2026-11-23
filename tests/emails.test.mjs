@@ -100,7 +100,7 @@ test("a shipping confirmation carries the carrier, the tracking number and the c
   assert.equal(email.subject, `Order #${item.data.number} is on its way`);
   assert.match(email.text, /Carrier: USPS/);
   assert.match(email.text, /Tracking number: 9400 1000/);
-  assert.match(email.text, /tools\.usps\.com\/go\/TrackConfirmAction\?tLabels=9400%201000/);
+  assert.match(email.text, /tools\.usps\.com\/go\/TrackConfirmAction\?tLabels=9400100000000000000000(\s|$)/m, "the tracking link drops the spaces a label prints");
   assert.match(email.html, /Track your package/);
   assert.match(email.text, /^Smoky Mountain Tee$/m, "a shipped line without a quantity shows none");
 });
@@ -300,4 +300,27 @@ test("switching the plugin on schedules the minute run", async () => {
   const ctx = store();
   await plugin.hooks["plugin:activate"]({}, ctx);
   assert.equal(ctx.tasks.get("store-emails"), "* * * * *");
+});
+
+test("the items Commerce's outbox gives on main are taken and emailed as they are", async () => {
+  // Copied from dinkuskit/commerce proof/store-emails-news-20261122/outbox-proof.log (main 37c9336), times made current
+  // and the redacted cart link filled in with this store's.
+  const ctx = store(), at = new Date().toISOString(), link = "https://store.example.test/cart/c/cap9?key=secret9";
+  await ctx.kv.set("state:cart-mode", "ticked");
+  await deliver(ctx, "order.paid", [{ id: "order-5:paid", at, data: { orderId: "order-5", number: 1005, test: false, email: "ana@buyer.test", name: "Ana Buyer",
+    shipTo: { name: "Ana Buyer", line1: "1 Example Way", city: "Testville", postalCode: "00000", country: "US" },
+    lines: [{ name: "Smoky Mountain Tee", options: "Size: M", quantity: 2, unitPrice: { currency: "USD", minor: "2400" } }],
+    subtotal: { currency: "USD", minor: "4800" }, discount: null, shipping: { currency: "USD", minor: "600" }, total: { currency: "USD", minor: "5400" } } }]);
+  await deliver(ctx, "order.shipped", [{ id: "order-1:shipped", at, data: { orderId: "order-1", number: 1001, test: false, shippedAt: at, email: "ana@buyer.test", name: "Ana Buyer",
+    carrier: null, tracking: null, lines: [{ productId: "mug", productName: "Mug", quantity: 1 }, { productId: "hat", productName: "Hat", quantity: 1 }] } }]);
+  await deliver(ctx, "cart.left", [{ id: "cap9:left", at, data: { email: "Cart-Shopper@Example.test", ticked: true, link, stopLink: `${link}&stop=1`,
+    lines: [{ name: "hat", quantity: 1, options: "" }] } }]);
+  await run(ctx);
+  assert.deepEqual(ctx.sent.map(email => [email.to, email.subject]), [
+    ["ana@buyer.test", "Order #1005 confirmed"], ["ana@buyer.test", "Order #1001 is on its way"],
+    ["Cart-Shopper@Example.test", "You left something in your cart at Camp Store"]]);
+  assert.match(ctx.sent[0].text, /2 × Smoky Mountain Tee \(Size: M\)  \$48\.00/);
+  assert.match(ctx.sent[0].text, /Total: \$54\.00 USD/);
+  assert.match(ctx.sent[1].text, /^1 × Mug$/m);
+  assert.match(ctx.sent[1].text, /View your order: https:\/\/store\.example\.test\/track-order/, "no carrier given: no tracking link");
 });
