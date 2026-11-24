@@ -13,7 +13,10 @@ export interface Line { name: string; options: string; quantity?: number; unitPr
 export interface OrderNews {
   orderId: string; number: number | null; test: boolean; email: string | null; name: string | null;
   shipTo: Address | null; lines: Line[]; moreLines: number;
-  subtotal: Money | null; discount: Money | null; shipping: Money | null; total: Money;
+  subtotal: Money | null; discount: Money | null; shipping: Money | null;
+  /** Sales tax, when the Tax plugin priced the order (dinkuskit/commerce#309); null or absent when untaxed. */
+  tax: Money | null;
+  total: Money;
 }
 /** An order was marked Completed: the shipping confirmation. */
 export interface ShippedNews {
@@ -80,10 +83,10 @@ function orderParts(data: Record<string, unknown>) {
 export function orderNews(data: unknown): OrderNews | null {
   if (!record(data)) return null;
   const parts = orderParts(data), shipTo = address(data.shipTo), items = lines(data.lines, true), total = money(data.total);
-  const subtotal = moneyOrNull(data.subtotal), discount = moneyOrNull(data.discount), shipping = moneyOrNull(data.shipping);
+  const subtotal = moneyOrNull(data.subtotal), discount = moneyOrNull(data.discount), shipping = moneyOrNull(data.shipping), tax = moneyOrNull(data.tax);
   const moreLines = data.moreLines === undefined ? 0 : count(data.moreLines, 0, 100_000);
-  if (!parts || shipTo === undefined || !items || !total || items.length + (moreLines ?? 0) === 0 || subtotal === undefined || discount === undefined || shipping === undefined || moreLines === null) return null;
-  return { ...parts, shipTo, lines: items, moreLines, subtotal, discount, shipping, total };
+  if (!parts || shipTo === undefined || !items || !total || items.length + (moreLines ?? 0) === 0 || subtotal === undefined || discount === undefined || shipping === undefined || tax === undefined || moreLines === null) return null;
+  return { ...parts, shipTo, lines: items, moreLines, subtotal, discount, shipping, tax, total };
 }
 
 export function shippedNews(data: unknown): ShippedNews | null {

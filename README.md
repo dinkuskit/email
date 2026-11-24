@@ -12,7 +12,7 @@ What exists:
   - `email:send` hands each email to the store's own sender, the one picked in EmDash's Settings > Email.
   - `users:read` finds the store's first Administrator, who gets the emails of TEST orders.
   - `media:read` lists the store's Media images for the email logo, and `media:bytes:read` lets the public `logo` route serve the one picked.
-- **Order confirmation.** One per paid order, about a minute after payment: order number, items with their options, subtotal, discount, shipping, total, the ship-to address and a "View your order" button to the store's `/track-order` page. Always on, as on Shopify.
+- **Order confirmation.** One per paid order, about a minute after payment: order number, items with their options, subtotal, discount, shipping, sales tax (when the order was taxed), total, the ship-to address and a "View your order" button to the store's `/track-order` page. Always on, as on Shopify.
 - **Shipping confirmation.** When the owner marks an order Completed, through Ship or by hand: the carrier and tracking number when given, with a "Track your package" button for USPS, UPS, FedEx and DHL. On from install; the owner can turn it off.
 - **Abandoned cart email.** Commerce decides a cart was left (10 hours after the shopper gave an email, unpaid, not empty, not on the stop list) and passes it on. The owner picks Off (the default), Shoppers who ticked the box, or All customers. The email carries the cart link and the stop link. Cart emails are marketing, and Cloudflare's sender allows only transactional email, so the page says they need an SMTP sender and links to the Guide.
 - **TEST orders** email the store's first Administrator instead of the shopper, marked `[Test]`.
@@ -28,7 +28,7 @@ What exists:
 | `POST courier/inbox` | The store's courier only; refuses any signed-in caller | Built to the [courier's doors](https://github.com/dinkuskit/courier/blob/main/docs/doors.md). Wants `order.paid`, `order.shipped` and `cart.left` from `dinkus-commerce`, each from its own bookmark. |
 | `GET logo` | Public | The logo the owner picked, read from Media each time; 404 when none. |
 
-The news shapes are Commerce's (`order.paid` data: `orderId, number, test, email, name, shipTo, lines[{name, options, quantity, unitPrice}], moreLines, subtotal, discount, shipping, total`; `order.shipped` adds `number, test, carrier, tracking`; `cart.left`: `email, ticked, link, stopLink, lines, moreLines`). An item out of shape is kept as "Not sent" and never emailed.
+The news shapes are Commerce's (`order.paid` data: `orderId, number, test, email, name, shipTo, lines[{name, options, quantity, unitPrice}], moreLines, subtotal, discount, shipping, tax, total`, where `tax` is null or absent when untaxed; `order.shipped` adds `number, test, carrier, tracking`; `cart.left`: `email, ticked, link, stopLink, lines, moreLines`). An item out of shape is kept as "Not sent" and never emailed.
 
 ## Install type
 
