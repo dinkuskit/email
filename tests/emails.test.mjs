@@ -70,6 +70,28 @@ test("an order confirmation goes to the shopper about a minute after payment, th
   assert.equal(JSON.stringify(kept).includes(item.data.email), false);
 });
 
+test("a taxed order's confirmation shows its Sales tax row; an untaxed one shows none", async () => {
+  const ctx = store();
+  const usd = minor => ({ currency: "USD", minor });
+  const taxed = paid({ tax: usd("683"), total: usd("7683") }), untaxed = paid({ tax: null }), older = paid();
+  await deliver(ctx, "order.paid", [taxed, untaxed, older]);
+  await run(ctx);
+  assert.equal(ctx.sent.length, 3);
+  for (const part of [ctx.sent[0].text, ctx.sent[0].html]) {
+    assert.match(part, /Sales tax/);
+    assert.match(part, /\$6\.83/);
+    assert.match(part, /\$76\.83 USD/);
+  }
+  assert.match(ctx.sent[0].text, /Shipping: \$6\.00\nSales tax: \$6\.83\nTotal: \$76\.83 USD/);
+  for (const email of ctx.sent.slice(1)) assert.doesNotMatch(email.text + email.html, /Sales tax/);
+  // A tax that does not read as money is news out of shape: kept as not sent, never emailed with a wrong total.
+  const ctx2 = store();
+  const bad = paid({ tax: { currency: "USD", minor: "6.83" } });
+  await deliver(ctx2, "order.paid", [bad]);
+  await run(ctx2);
+  assert.equal(ctx2.sent.length, 0);
+});
+
 test("a TEST order's emails go to the store's first Administrator, marked as a test", async () => {
   const ctx = store();
   const order = paid({ test: true }), ship = shipped({ test: true });

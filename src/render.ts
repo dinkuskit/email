@@ -98,7 +98,7 @@ const Title = (words: string) => words.charAt(0).toUpperCase() + words.slice(1);
 export function orderConfirmation(look: Look, order: OrderNews, test = false): Message {
   const name = orderName(order.number), mark = test ? "[Test] " : "";
   const subject = `${mark}${Title(name)} confirmed`;
-  const sums: [string, Money | null][] = [["Subtotal", order.subtotal], ["Discount", order.discount && order.discount.minor !== "0" ? { ...order.discount, minor: order.discount.minor.startsWith("-") ? order.discount.minor : `-${order.discount.minor}` } : null], ["Shipping", order.shipping]];
+  const sums: [string, Money | null][] = [["Subtotal", order.subtotal], ["Discount", order.discount && order.discount.minor !== "0" ? { ...order.discount, minor: order.discount.minor.startsWith("-") ? order.discount.minor : `-${order.discount.minor}` } : null], ["Shipping", order.shipping], ["Sales tax", order.tax && order.tax.minor !== "0" ? order.tax : null]];
   const totals = sums.filter((pair): pair is [string, Money] => pair[1] !== null);
   const total = `${price(order.total)}${order.total.currency === "USD" ? " USD" : ""}`;
   const lead = `We've got ${name} and will email you again when it ships.`;
@@ -168,7 +168,7 @@ export function sampleOrder(look: Look): Message {
     orderId: "sample", number: 1001, test: false, email: null, name: "Jamie Rivera",
     shipTo: { name: "Jamie Rivera", line1: "12 Pine Street", city: "Asheville", region: "NC", postalCode: "28801", country: "US" },
     lines: [{ name: "Sample T-shirt", options: "Size: M · Colour: Black", quantity: 2, unitPrice: usd("2400") }, { name: "Sample mug", options: "", quantity: 1, unitPrice: usd("1600") }],
-    moreLines: 0, subtotal: usd("6400"), discount: null, shipping: usd("600"), total: usd("7000"),
+    moreLines: 0, subtotal: usd("6400"), discount: null, shipping: usd("600"), tax: null, total: usd("7000"),
   });
   return { ...message, subject: `[Sample] ${message.subject}` };
 }
